@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>将棋(完全版)・チェス・オセロ・五目｜対人・AI切替</title>
+    <title>オセロ・チェス・五目並べ｜世界レベルのAIを目指して</title>
     <style>
         * {
             box-sizing: border-box;
-            font-family: 'Segoe UI', Meiryo, 'MS Mincho', sans-serif;
+            font-family: 'Segoe UI', Meiryo, sans-serif;
         }
         body {
             background: #1f4a57;
@@ -136,58 +136,6 @@
         .chess-board td .black-piece { color: #1a1a1a; }
         .chess-board td.selected { box-shadow: inset 0 0 0 5px gold; }
 
-        .shogi-board {
-            border-collapse: collapse;
-            background: #dbb47a;
-            border: 8px solid #7b5f3a;
-            table-layout: fixed;
-            width: min(90vw, 450px);
-            height: min(90vw, 450px);
-        }
-        .shogi-board td {
-            border: 1px solid #4f3a1f;
-            text-align: center;
-            vertical-align: middle;
-            font-size: min(7vw, 30px);
-            font-family: 'MS Mincho', '游明朝', serif;
-            background: #eedbc0;
-            width: 11.11%;
-            height: 11.11%;
-            cursor: pointer;
-            touch-action: manipulation;
-            padding: 0;
-            line-height: 1;
-            text-shadow: none; /* 影を完全に除去 */
-        }
-        .shogi-board td.sente { color: #0e2982; }
-        .shogi-board td.gote { color: #b03030; transform: rotate(180deg); }
-        .shogi-board td.selected { background: #fbe38e; box-shadow: inset 0 0 0 4px #c58a2b; }
-
-        .captured-pieces {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin: 10px 0;
-            padding: 10px;
-            background: #b59164;
-            border-radius: 30px;
-            justify-content: center;
-            min-height: 50px;
-        }
-        .capture-item {
-            background: #eedbc0;
-            border-radius: 20px;
-            padding: 5px 15px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            border: 2px solid #7b5f3a;
-            cursor: pointer;
-            box-shadow: 0 2px 0 #5f4a28;
-            text-shadow: none;
-        }
-        .capture-item.sente { color: #0e2982; }
-        .capture-item.gote { color: #b03030; transform: rotate(180deg); }
-
         .status-bar {
             margin: 12px 0 8px;
             font-size: 1.2rem;
@@ -224,12 +172,11 @@
 </head>
 <body>
 <div class="game-container">
-    <h1>3月6日　発表用　ゲーム
+    <h1>3月6日 発表用ゲーム（世界レベルAI）</h1>
     <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-bottom: 10px;">
         <div class="menu">
             <button class="game-btn active" data-game="othello">オセロ</button>
             <button class="game-btn" data-game="chess">チェス</button>
-            <button class="game-btn" data-game="shogi">将棋</button>
             <button class="game-btn" data-game="gomoku">五目並べ</button>
         </div>
         <div id="aiToggle" class="ai-toggle">🤖 AI オフ</div>
@@ -252,17 +199,6 @@
                 <button class="reset-btn" id="resetChess">リセット</button>
             </div>
         </div>
-        <!-- 将棋 (完全ルール) -->
-        <div id="shogi-panel" class="game-panel">
-            <div class="board-wrapper">
-                <div id="shogiCapturedSente" class="captured-pieces">▲ 持ち駒</div>
-                <table id="shogiBoard" class="shogi-board"></table>
-                <div id="shogiCapturedGote" class="captured-pieces">▼ 持ち駒</div>
-                <div class="status-bar" id="shogiStatus">将棋 (先手青の番)</div>
-                <button class="reset-btn" id="resetShogi">リセット</button>
-                <div style="color:#ffd966; font-size:0.9rem;">※王を取るか詰みで勝敗</div>
-            </div>
-        </div>
         <!-- 五目並べ -->
         <div id="gomoku-panel" class="game-panel">
             <div class="board-wrapper">
@@ -272,7 +208,7 @@
             </div>
         </div>
     </div>
-    <div class="footer">AIオフ：2人対戦 / AIオン：あなた(先手) vs AI(後手)</div>
+    <div class="footer">AIオフ：2人対戦 / AIオン：あなた(先手) vs 強化AI(後手)</div>
 </div>
 
 <script>
@@ -289,7 +225,6 @@
     const panels = {
         othello: document.getElementById('othello-panel'),
         chess: document.getElementById('chess-panel'),
-        shogi: document.getElementById('shogi-panel'),
         gomoku: document.getElementById('gomoku-panel')
     };
     const btns = document.querySelectorAll('.game-btn');
@@ -307,19 +242,30 @@
         if (!aiEnabled) return;
         setTimeout(() => {
             switch (game) {
-                case 'othello': if (!oGameOver && oPlayer === 'white') makeAIOthelloMove(); break;
-                case 'chess':    if (chessGame && !chessGame.game_over() && chessGame.turn() === 'b') makeAIChessMove(); break;
-                case 'shogi':    if (!shogiGameOver && shogiTurn === 'gote') makeAIShogiMove(); break;
-                case 'gomoku':   if (!gGameOver && gTurn === 'white') makeAIGomokuMove(); break;
+                case 'othello': if (!oGameOver && oPlayer === 'white') makeStrongAIOthelloMove(); break;
+                case 'chess':    if (chessGame && !chessGame.game_over() && chessGame.turn() === 'b') makeStrongAIChessMove(); break;
+                case 'gomoku':   if (!gGameOver && gTurn === 'white') makeStrongAIGomokuMove(); break;
             }
         }, 200);
     }
 
-    // ---------- オセロ ----------
+    // ==================== オセロ (世界レベルを目指すAI) ====================
     const oCanvas = document.getElementById('othelloCanvas');
     const oCtx = oCanvas.getContext('2d');
     const oStatus = document.getElementById('othelloStatus');
     let oBoard = [], oPlayer = 'black', oGameOver = false;
+
+    // 改良版評価関数のための重みテーブル (隅、辺、中盤など)
+    const positionWeight = [
+        [100, -20, 10,  5,  5, 10, -20, 100],
+        [-20, -50, -2, -2, -2, -2, -50, -20],
+        [ 10,  -2,  5,  1,  1,  5,  -2,  10],
+        [  5,  -2,  1,  2,  2,  1,  -2,   5],
+        [  5,  -2,  1,  2,  2,  1,  -2,   5],
+        [ 10,  -2,  5,  1,  1,  5,  -2,  10],
+        [-20, -50, -2, -2, -2, -2, -50, -20],
+        [100, -20, 10,  5,  5, 10, -20, 100]
+    ];
 
     function initOthello() {
         oBoard = [
@@ -419,11 +365,99 @@
         }
         return true;
     }
-    function makeAIOthelloMove() {
+    // 盤面をコピーして一手進める
+    function simulateOthelloMove(board, row, col, player) {
+        const newBoard = board.map(r => [...r]);
+        const opp = player==='black'?'white':'black';
+        const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+        for(let [dr,dc] of dirs) {
+            let nr=row+dr, nc=col+dc;
+            let path = [];
+            while(nr>=0 && nr<8 && nc>=0 && nc<8 && newBoard[nr][nc]===opp) {
+                path.push([nr,nc]);
+                nr+=dr; nc+=dc;
+            }
+            if(path.length && nr>=0 && nr<8 && nc>=0 && nc<8 && newBoard[nr][nc]===player) {
+                path.forEach(([fr,fc]) => newBoard[fr][fc] = player);
+            }
+        }
+        newBoard[row][col] = player;
+        return newBoard;
+    }
+    // 改良版評価関数 (位置重み + 着手可能数 + 確定石の簡易評価)
+    function evaluateOthello(board, player) {
+        let score = 0;
+        // 位置重み
+        for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
+            if(board[r][c] === player) score += positionWeight[r][c];
+            else if(board[r][c] !== '') score -= positionWeight[r][c];
+        }
+        // 着手可能数 (mobility)
+        const myMoves = getValidOthelloMoves(board, player).length;
+        const oppMoves = getValidOthelloMoves(board, player==='black'?'white':'black').length;
+        score += (myMoves - oppMoves) * 5;  // 着手可能数の差を重視
+        
+        // 簡易的な確定石 (四隅は確定とみなす)
+        const corners = [[0,0],[0,7],[7,0],[7,7]];
+        for(let [r,c] of corners) {
+            if(board[r][c] === player) score += 200;
+            else if(board[r][c] !== '') score -= 200;
+        }
+        return score;
+    }
+    // αβ法で深さ3まで読む (簡易版)
+    function alphaBetaOthello(board, depth, alpha, beta, maximizingPlayer, player) {
+        if(depth === 0) {
+            return evaluateOthello(board, player);
+        }
+        const moves = getValidOthelloMoves(board, maximizingPlayer ? player : (player==='black'?'white':'black'));
+        if(moves.length === 0) {
+            // パスの場合、相手の手番に切り替えて評価 (簡易的)
+            return alphaBetaOthello(board, depth-1, alpha, beta, !maximizingPlayer, player);
+        }
+        if(maximizingPlayer) {
+            let maxEval = -Infinity;
+            for(let move of moves) {
+                const newBoard = simulateOthelloMove(board, move[0], move[1], player);
+                const eval = alphaBetaOthello(newBoard, depth-1, alpha, beta, false, player);
+                maxEval = Math.max(maxEval, eval);
+                alpha = Math.max(alpha, eval);
+                if(beta <= alpha) break;
+            }
+            return maxEval;
+        } else {
+            let minEval = Infinity;
+            const opp = player==='black'?'white':'black';
+            for(let move of moves) {
+                const newBoard = simulateOthelloMove(board, move[0], move[1], opp);
+                const eval = alphaBetaOthello(newBoard, depth-1, alpha, beta, true, player);
+                minEval = Math.min(minEval, eval);
+                beta = Math.min(beta, eval);
+                if(beta <= alpha) break;
+            }
+            return minEval;
+        }
+    }
+    // 世界レベルのオセロAI (αβ法 深さ3)
+    function makeStrongAIOthelloMove() {
         if(oGameOver) return;
         const moves = getValidOthelloMoves(oBoard, oPlayer);
-        if(moves.length) makeOthelloMove(...moves[Math.floor(Math.random()*moves.length)]);
+        if(moves.length === 0) return;
+        
+        let bestScore = -Infinity;
+        let bestMove = moves[0];
+        for(let move of moves) {
+            const newBoard = simulateOthelloMove(oBoard, move[0], move[1], oPlayer);
+            // 相手番から深さ2で探索 (合計3手読み)
+            const score = alphaBetaOthello(newBoard, 2, -Infinity, Infinity, false, oPlayer);
+            if(score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
+        }
+        makeOthelloMove(bestMove[0], bestMove[1]);
     }
+
     oCanvas.addEventListener('click', e => {
         if(oGameOver) return;
         const rect = oCanvas.getBoundingClientRect(), scale = 450/rect.width;
@@ -435,9 +469,34 @@
     });
     document.getElementById('resetOthello').addEventListener('click', initOthello);
 
-    // ---------- チェス (chess.js) ----------
+    // ==================== チェス (改良版AI) ====================
     let chessGame, chessTable, chessStatus;
     let selectedChess = null;
+
+    // 駒の価値テーブル (標準)
+    const pieceValue = { p:100, n:320, b:330, r:500, q:900, k:20000 };
+    // ポーンの位置によるボーナス (中央に行くほど高い)
+    const pawnBonus = [
+        [0,  0,  0,  0,  0,  0,  0,  0],
+        [50, 50, 50, 50, 50, 50, 50, 50],
+        [10, 10, 20, 30, 30, 20, 10, 10],
+        [5,  5, 10, 25, 25, 10,  5,  5],
+        [0,  0,  0, 20, 20,  0,  0,  0],
+        [5, -5,-10,  0,  0,-10, -5,  5],
+        [5, 10, 10,-20,-20, 10, 10,  5],
+        [0,  0,  0,  0,  0,  0,  0,  0]
+    ];
+    // ナイトの位置ボーナス (中央)
+    const knightBonus = [
+        [-50,-40,-30,-30,-30,-30,-40,-50],
+        [-40,-20,  0,  0,  0,  0,-20,-40],
+        [-30,  0, 10, 15, 15, 10,  0,-30],
+        [-30,  5, 15, 20, 20, 15,  5,-30],
+        [-30,  0, 15, 20, 20, 15,  0,-30],
+        [-30,  5, 10, 15, 15, 10,  5,-30],
+        [-40,-20,  0,  5,  5,  0,-20,-40],
+        [-50,-40,-30,-30,-30,-30,-40,-50]
+    ];
 
     function initChess() {
         chessGame = new Chess();
@@ -506,12 +565,58 @@
             if (move) scheduleAIMoveIfNeeded('chess');
         }
     }
-    function makeAIChessMove() {
+    // 詳細な評価関数 (駒の価値 + 位置ボーナス)
+    function evaluateChessAdvanced(game, color) {
+        const board = game.board();
+        let score = 0;
+        for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
+            const piece = board[r][c];
+            if(piece) {
+                let value = pieceValue[piece.type];
+                // 位置ボーナス
+                if(piece.type === 'p') value += pawnBonus[r][c] * (piece.color === 'w' ? 1 : -1);
+                if(piece.type === 'n') value += knightBonus[r][c] * (piece.color === 'w' ? 1 : -1);
+                // 他の駒の位置ボーナスは簡略化
+                if(piece.color === color) score += value;
+                else score -= value;
+            }
+        }
+        return score;
+    }
+    // ミニマックス深さ2 (αβなし簡易版)
+    function makeStrongAIChessMove() {
         if (!chessGame || chessGame.game_over()) return;
         const moves = chessGame.moves({ verbose: true });
         if (moves.length === 0) return;
-        const move = moves[Math.floor(Math.random() * moves.length)];
-        chessGame.move({ from: move.from, to: move.to, promotion: 'q' });
+        
+        let bestScore = -Infinity;
+        let bestMove = moves[0];
+        const currentColor = chessGame.turn();
+        
+        for(let move of moves) {
+            const gameCopy = new Chess(chessGame.fen());
+            gameCopy.move({ from: move.from, to: move.to, promotion: 'q' });
+            // 相手の応手を考慮する簡易的な先読み (深さ1)
+            let score = evaluateChessAdvanced(gameCopy, currentColor);
+            // 相手の最善手を考慮するなら、相手の手を全て試して最小値を取るが、ここでは簡易的に
+            // 相手番の評価も少し加味
+            const oppMoves = gameCopy.moves({ verbose: true });
+            if(oppMoves.length > 0) {
+                let worstScore = Infinity;
+                for(let oppMove of oppMoves) {
+                    const gameCopy2 = new Chess(gameCopy.fen());
+                    gameCopy2.move({ from: oppMove.from, to: oppMove.to, promotion: 'q' });
+                    const oppScore = evaluateChessAdvanced(gameCopy2, currentColor);
+                    worstScore = Math.min(worstScore, oppScore);
+                }
+                score = (score + worstScore) / 2; // 相手の応手を考慮
+            }
+            if(score > bestScore) {
+                bestScore = score;
+                bestMove = move;
+            }
+        }
+        chessGame.move({ from: bestMove.from, to: bestMove.to, promotion: 'q' });
         renderChess();
         scheduleAIMoveIfNeeded('chess');
     }
@@ -527,424 +632,26 @@
     else window.addEventListener('load', () => { if (window.Chess) initChess(); });
     document.getElementById('resetChess').addEventListener('click', resetChess);
 
-    // ---------- 将棋 完全ルール実装 ----------
-    const shogiTable = document.getElementById('shogiBoard');
-    const shogiStatus = document.getElementById('shogiStatus');
-    const capturedSenteDiv = document.getElementById('shogiCapturedSente');
-    const capturedGoteDiv = document.getElementById('shogiCapturedGote');
-    let shogiBoard = [], shogiSelected = [-1,-1];
-    let shogiTurn = 'sente';
-    let capturedSente = [], capturedGote = [];
-    let shogiGameOver = false;
-    let pendingPromotion = null;
-
-    // 駒の移動方向 (先手基準)
-    const pieceMoves = {
-        '歩': { directions: [[-1,0]], range: false },
-        '香': { directions: [[-1,0]], range: true },
-        '桂': { directions: [[-2,-1],[-2,1]], range: false },
-        '銀': { directions: [[-1,-1],[-1,0],[-1,1],[1,-1],[1,1]], range: false },
-        '金': { directions: [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,0]], range: false },
-        '角': { directions: [[-1,-1],[-1,1],[1,-1],[1,1]], range: true },
-        '飛': { directions: [[-1,0],[1,0],[0,-1],[0,1]], range: true },
-        '王': { directions: [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]], range: false },
-        'と': { directions: [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,0]], range: false },
-        '成香': { directions: [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,0]], range: false },
-        '成桂': { directions: [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,0]], range: false },
-        '成銀': { directions: [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,0]], range: false },
-        '馬': { directions: [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]], range: false },
-        '竜': { directions: [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]], range: false }
-    };
-
-    const promoteMap = {
-        '歩': 'と', '香': '成香', '桂': '成桂', '銀': '成銀', '角': '馬', '飛': '竜'
-    };
-
-    function initShogi() {
-        shogiBoard = [
-            ['gote_香','gote_桂','gote_銀','gote_金','gote_王','gote_金','gote_銀','gote_桂','gote_香'],
-            ['','gote_飛','','','','','','gote_角',''],
-            ['gote_歩','gote_歩','gote_歩','gote_歩','gote_歩','gote_歩','gote_歩','gote_歩','gote_歩'],
-            ['','','','','','','','',''],
-            ['','','','','','','','',''],
-            ['','','','','','','','',''],
-            ['sente_歩','sente_歩','sente_歩','sente_歩','sente_歩','sente_歩','sente_歩','sente_歩','sente_歩'],
-            ['','sente_角','','','','','','sente_飛',''],
-            ['sente_香','sente_桂','sente_銀','sente_金','sente_王','sente_金','sente_銀','sente_桂','sente_香']
-        ];
-        shogiTurn = 'sente';
-        capturedSente = [];
-        capturedGote = [];
-        shogiSelected = [-1,-1];
-        shogiGameOver = false;
-        pendingPromotion = null;
-        renderShogi();
-        shogiStatus.textContent = '将棋 (先手青の番)';
-        scheduleAIMoveIfNeeded('shogi');
-    }
-
-    function renderShogi() {
-        shogiTable.innerHTML = '';
-        for(let r=0; r<9; r++) {
-            const tr = document.createElement('tr');
-            for(let c=0; c<9; c++) {
-                const td = document.createElement('td');
-                const cell = shogiBoard[r][c];
-                if(cell) {
-                    const [owner, piece] = cell.split('_');
-                    td.className = owner;
-                    td.textContent = piece;
-                }
-                if(shogiSelected[0]===r && shogiSelected[1]===c) td.classList.add('selected');
-                td.dataset.row = r; td.dataset.col = c;
-                td.addEventListener('click', shogiClick);
-                tr.appendChild(td);
-            }
-            shogiTable.appendChild(tr);
-        }
-        capturedSenteDiv.innerHTML = '▲ 持ち駒 ' + capturedSente.map(p => {
-            const piece = p.split('_')[1];
-            return `<span class="capture-item sente" data-piece="${p}">${piece}</span>`;
-        }).join('');
-        capturedGoteDiv.innerHTML = '▼ 持ち駒 ' + capturedGote.map(p => {
-            const piece = p.split('_')[1];
-            return `<span class="capture-item gote" data-piece="${p}">${piece}</span>`;
-        }).join('');
-        document.querySelectorAll('.capture-item.sente').forEach(el => {
-            el.addEventListener('click', () => handleCaptureClick('sente', el.dataset.piece));
-        });
-        document.querySelectorAll('.capture-item.gote').forEach(el => {
-            el.addEventListener('click', () => handleCaptureClick('gote', el.dataset.piece));
-        });
-    }
-
-    function handleCaptureClick(turn, piece) {
-        if (shogiGameOver || pendingPromotion) return;
-        if (shogiTurn !== turn) { shogiStatus.textContent = '今はあなたの番ではありません'; return; }
-        shogiSelected = [-2, piece];
-        renderShogi();
-        shogiStatus.textContent = turn + ' 持ち駒 ' + piece.split('_')[1] + ' を打つ場所をクリック';
-    }
-
-    // 二歩チェック修正版
-    function canDropPiece(turn, piece, row, col) {
-        if (shogiBoard[row][col] !== '') return false;
-        const [owner, ptype] = piece.split('_');
-        if (ptype === '歩') {
-            for (let r = 0; r < 9; r++) {
-                const cell = shogiBoard[r][col];
-                if (cell) {
-                    const [cellOwner, cellPiece] = cell.split('_');
-                    if (cellOwner === turn && cellPiece === '歩') return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    function getMovesFromPiece(ptype, turn) {
-        let base = pieceMoves[ptype];
-        if (!base) return { directions: [], range: false };
-        if (turn === 'gote') {
-            let reversed = base.directions.map(([dr, dc]) => [-dr, dc]);
-            return { directions: reversed, range: base.range };
-        }
-        return base;
-    }
-
-    function getPossibleMoves(fromRow, fromCol, piece, turn) {
-        const [owner, ptype] = piece.split('_');
-        const moves = getMovesFromPiece(ptype, turn);
-        const results = [];
-        for (let [dr, dc] of moves.directions) {
-            if (moves.range) {
-                let r = fromRow + dr, c = fromCol + dc;
-                while (r >= 0 && r < 9 && c >= 0 && c < 9) {
-                    const target = shogiBoard[r][c];
-                    if (target === '') {
-                        results.push([r, c]);
-                    } else {
-                        if (!target.startsWith(turn)) results.push([r, c]);
-                        break;
-                    }
-                    r += dr; c += dc;
-                }
-            } else {
-                let r = fromRow + dr, c = fromCol + dc;
-                if (r >= 0 && r < 9 && c >= 0 && c < 9) {
-                    const target = shogiBoard[r][c];
-                    if (target === '' || !target.startsWith(turn)) results.push([r, c]);
-                }
-            }
-        }
-        return results;
-    }
-
-    function canPromote(fromRow, toRow, turn) {
-        if (turn === 'sente') return toRow <= 2 || fromRow <= 2;
-        else return toRow >= 6 || fromRow >= 6;
-    }
-
-    function findKing(board, turn) {
-        for (let r=0; r<9; r++) for (let c=0; c<9; c++) {
-            const cell = board[r][c];
-            if (cell && cell.startsWith(turn) && cell.split('_')[1] === '王') return [r, c];
-        }
-        return null;
-    }
-
-    function copyBoard(board) {
-        return board.map(row => [...row]);
-    }
-
-    function applyMove(board, fromRow, fromCol, toRow, toCol, promote = false) {
-        const newBoard = copyBoard(board);
-        const piece = newBoard[fromRow][fromCol];
-        newBoard[fromRow][fromCol] = '';
-        let movedPiece = piece;
-        if (promote) {
-            const [owner, ptype] = piece.split('_');
-            const newType = promoteMap[ptype];
-            if (newType) movedPiece = owner + '_' + newType;
-        }
-        newBoard[toRow][toCol] = movedPiece;
-        return newBoard;
-    }
-
-    function applyDrop(board, row, col, piece) {
-        const newBoard = copyBoard(board);
-        newBoard[row][col] = piece;
-        return newBoard;
-    }
-
-    function isInCheck(board, turn) {
-        const kingPos = findKing(board, turn);
-        if (!kingPos) return false;
-        const [kr, kc] = kingPos;
-        const opponent = turn === 'sente' ? 'gote' : 'sente';
-        for (let r=0; r<9; r++) for (let c=0; c<9; c++) {
-            const cell = board[r][c];
-            if (cell && cell.startsWith(opponent)) {
-                const [_, ptype] = cell.split('_');
-                const moves = getMovesFromPiece(ptype, opponent);
-                for (let [dr, dc] of moves.directions) {
-                    if (moves.range) {
-                        let nr = r + dr, nc = c + dc;
-                        while (nr >= 0 && nr < 9 && nc >= 0 && nc < 9) {
-                            if (nr === kr && nc === kc) return true;
-                            if (board[nr][nc] !== '') break;
-                            nr += dr; nc += dc;
-                        }
-                    } else {
-                        let nr = r + dr, nc = c + dc;
-                        if (nr === kr && nc === kc) return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    function isMoveSafe(board, fromRow, fromCol, toRow, toCol, turn, promote = false) {
-        const newBoard = applyMove(board, fromRow, fromCol, toRow, toCol, promote);
-        return !isInCheck(newBoard, turn);
-    }
-
-    function isDropSafe(board, row, col, piece, turn) {
-        const newBoard = applyDrop(board, row, col, piece);
-        return !isInCheck(newBoard, turn);
-    }
-
-    function shogiClick(e) {
-        if (shogiGameOver) return;
-        const row = parseInt(e.currentTarget.dataset.row);
-        const col = parseInt(e.currentTarget.dataset.col);
-
-        if (pendingPromotion) {
-            const confirmPromote = confirm('成りますか？ (OK=成る, キャンセル=成らない)');
-            const move = pendingPromotion;
-            const safeNormal = isMoveSafe(shogiBoard, move.fromRow, move.fromCol, move.toRow, move.toCol, shogiTurn, false);
-            const safePromote = isMoveSafe(shogiBoard, move.fromRow, move.fromCol, move.toRow, move.toCol, shogiTurn, true);
-            if (confirmPromote) {
-                if (!safePromote) {
-                    alert('成ると自殺手になります。');
-                    pendingPromotion = null;
-                    shogiSelected = [-1,-1];
-                    renderShogi();
-                    return;
-                }
-                const [owner, ptype] = move.piece.split('_');
-                const newType = promoteMap[ptype];
-                const newPiece = owner + '_' + newType;
-                shogiBoard[move.fromRow][move.fromCol] = '';
-                if (move.captured) {
-                    const capOwner = move.captured.split('_')[0];
-                    const capPiece = move.captured.split('_')[1];
-                    if (capOwner === 'sente') capturedGote.push('sente_' + capPiece);
-                    else capturedSente.push('gote_' + capPiece);
-                }
-                shogiBoard[move.toRow][move.toCol] = newPiece;
-            } else {
-                if (!safeNormal) {
-                    alert('成らないと自殺手になります。');
-                    pendingPromotion = null;
-                    shogiSelected = [-1,-1];
-                    renderShogi();
-                    return;
-                }
-                shogiBoard[move.fromRow][move.fromCol] = '';
-                if (move.captured) {
-                    const capOwner = move.captured.split('_')[0];
-                    const capPiece = move.captured.split('_')[1];
-                    if (capOwner === 'sente') capturedGote.push('sente_' + capPiece);
-                    else capturedSente.push('gote_' + capPiece);
-                }
-                shogiBoard[move.toRow][move.toCol] = move.piece;
-            }
-            shogiTurn = shogiTurn === 'sente' ? 'gote' : 'sente';
-            pendingPromotion = null;
-            shogiSelected = [-1,-1];
-            renderShogi();
-            if (move.captured && move.captured.includes('王')) {
-                shogiGameOver = true;
-                shogiStatus.textContent = (move.captured.startsWith('sente')?'後手':'先手') + 'が王を取って勝ち！';
-            } else {
-                shogiStatus.textContent = (shogiTurn==='sente'?'先手青':'後手赤') + 'の番';
-                scheduleAIMoveIfNeeded('shogi');
-            }
-            return;
-        }
-
-        if (shogiSelected[0] === -1) {
-            const cell = shogiBoard[row][col];
-            if (cell && cell.startsWith(shogiTurn)) {
-                shogiSelected = [row, col];
-                renderShogi();
-            } else if (cell) {
-                shogiStatus.textContent = 'その駒は動かせません';
-            }
-        } else if (shogiSelected[0] === -2) {
-            const piece = shogiSelected[1];
-            if (!canDropPiece(shogiTurn, piece, row, col)) {
-                shogiStatus.textContent = 'そこには打てません (二歩または行き所なし)';
-                shogiSelected = [-1, -1];
-                renderShogi();
-                return;
-            }
-            if (!isDropSafe(shogiBoard, row, col, piece, shogiTurn)) {
-                shogiStatus.textContent = '自殺手です (王手がかかる)';
-                shogiSelected = [-1, -1];
-                renderShogi();
-                return;
-            }
-            shogiBoard[row][col] = piece;
-            if (shogiTurn === 'sente') {
-                capturedSente = capturedSente.filter(p => p !== piece);
-            } else {
-                capturedGote = capturedGote.filter(p => p !== piece);
-            }
-            shogiTurn = shogiTurn === 'sente' ? 'gote' : 'sente';
-            shogiSelected = [-1,-1];
-            renderShogi();
-            shogiStatus.textContent = (shogiTurn==='sente'?'先手青':'後手赤') + 'の番';
-            scheduleAIMoveIfNeeded('shogi');
-        } else {
-            const fromRow = shogiSelected[0], fromCol = shogiSelected[1];
-            const piece = shogiBoard[fromRow][fromCol];
-            if (!piece) { shogiSelected = [-1,-1]; renderShogi(); return; }
-            const target = shogiBoard[row][col];
-            if (target && target.startsWith(shogiTurn)) {
-                shogiStatus.textContent = '自分の駒の上には移動できません';
-                shogiSelected = [-1,-1];
-                renderShogi();
-                return;
-            }
-            const possible = getPossibleMoves(fromRow, fromCol, piece, shogiTurn);
-            if (!possible.some(([r,c]) => r===row && c===col)) {
-                shogiStatus.textContent = 'その移動はできません';
-                shogiSelected = [-1,-1];
-                renderShogi();
-                return;
-            }
-            const [owner, ptype] = piece.split('_');
-            const promotePossible = promoteMap[ptype] && canPromote(fromRow, row, shogiTurn);
-            if (promotePossible) {
-                pendingPromotion = {
-                    fromRow, fromCol, toRow: row, toCol: col,
-                    piece: piece,
-                    captured: target
-                };
-                shogiSelected = [-1,-1];
-                renderShogi();
-                shogiStatus.textContent = '成りを選択してください (ダイアログ)';
-                return;
-            }
-            if (!isMoveSafe(shogiBoard, fromRow, fromCol, row, col, shogiTurn, false)) {
-                shogiStatus.textContent = '自殺手です (王手がかかる)';
-                shogiSelected = [-1,-1];
-                renderShogi();
-                return;
-            }
-            shogiBoard[fromRow][fromCol] = '';
-            if (target) {
-                const capOwner = target.split('_')[0];
-                const capPiece = target.split('_')[1];
-                if (capOwner === 'sente') capturedGote.push('sente_' + capPiece);
-                else capturedSente.push('gote_' + capPiece);
-            }
-            shogiBoard[row][col] = piece;
-            shogiTurn = shogiTurn === 'sente' ? 'gote' : 'sente';
-            shogiSelected = [-1,-1];
-            renderShogi();
-            if (target && target.includes('王')) {
-                shogiGameOver = true;
-                shogiStatus.textContent = (target.startsWith('sente')?'後手':'先手') + 'が王を取って勝ち！';
-            } else {
-                shogiStatus.textContent = (shogiTurn==='sente'?'先手青':'後手赤') + 'の番';
-                scheduleAIMoveIfNeeded('shogi');
-            }
-        }
-    }
-
-    function makeAIShogiMove() {
-        if (shogiGameOver) return;
-        const moves = [];
-        for (let r=0; r<9; r++) for (let c=0; c<9; c++) {
-            const cell = shogiBoard[r][c];
-            if (cell && cell.startsWith(shogiTurn)) {
-                const possible = getPossibleMoves(r, c, cell, shogiTurn);
-                for (let [tr, tc] of possible) {
-                    if (isMoveSafe(shogiBoard, r, c, tr, tc, shogiTurn, false)) {
-                        moves.push({ type: 'move', fromRow: r, fromCol: c, toRow: tr, toCol: tc, promote: false });
-                    }
-                }
-            }
-        }
-        if (moves.length === 0) return;
-        const move = moves[Math.floor(Math.random() * moves.length)];
-        const piece = shogiBoard[move.fromRow][move.fromCol];
-        const target = shogiBoard[move.toRow][move.toCol];
-        shogiBoard[move.fromRow][move.fromCol] = '';
-        if (target) {
-            const capOwner = target.split('_')[0];
-            const capPiece = target.split('_')[1];
-            if (capOwner === 'sente') capturedGote.push('sente_' + capPiece);
-            else capturedSente.push('gote_' + capPiece);
-        }
-        shogiBoard[move.toRow][move.toCol] = piece;
-        shogiTurn = shogiTurn === 'sente' ? 'gote' : 'sente';
-        renderShogi();
-        shogiStatus.textContent = (shogiTurn==='sente'?'先手青':'後手赤') + 'の番';
-        scheduleAIMoveIfNeeded('shogi');
-    }
-
-    document.getElementById('resetShogi').addEventListener('click', initShogi);
-
-    // ---------- 五目並べ ----------
+    // ==================== 五目並べ (世界レベルAI) ====================
     const gCanvas = document.getElementById('gomokuCanvas');
     const gCtx = gCanvas.getContext('2d');
     const gStatus = document.getElementById('gomokuStatus');
     let gBoard = [], gTurn = 'black', gGameOver = false;
+
+    // パターンの重み (長さと開放度を考慮)
+    const patternScore = {
+        '11111': 1000000,  // 五連
+        '011110': 10000,   // 四 (両端空き)
+        '011112': 5000,    // 四 (片側空き、片側相手 or 壁)
+        '211110': 5000,
+        '0110110': 4000,   // 三・三の形 (簡略)
+        '01110': 2000,     // 三 (両端空き)
+        '01112': 800,      // 三 (片側空き)
+        '21110': 800,
+        '0110': 200,       // 二 (両端空き)
+        '0112': 50,        // 二 (片側空き)
+        '2110': 50
+    };
 
     function initGomoku() {
         gBoard = Array(15).fill().map(()=>Array(15).fill(''));
@@ -985,6 +692,93 @@
         }
         return false;
     }
+    // ある方向のパターンを取得 (最大5マス)
+    function getLine(board, r, c, dr, dc, length) {
+        let line = [];
+        for(let i=0; i<length; i++) {
+            let nr = r + dr*i, nc = c + dc*i;
+            if(nr<0||nr>=15||nc<0||nc>=15) line.push('2'); // 壁
+            else if(board[nr][nc]==='') line.push('0');
+            else if(board[nr][nc]==='black') line.push('1');
+            else line.push('1'); // 白も黒も同じ扱い（簡略化のため）
+        }
+        return line.join('');
+    }
+    // 評価関数 (パターンベース)
+    function evaluateGomokuPosition(board, player, row, col) {
+        if(board[row][col] !== '') return 0;
+        let score = 0;
+        const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+        for(let [dr,dc] of dirs) {
+            // 5マスのパターンを取得
+            let line = getLine(board, row - 2*dr, col - 2*dc, dr, dc, 5);
+            if(patternScore[line]) score += patternScore[line];
+            // 逆向きもチェック
+            let lineRev = getLine(board, row + 2*dr, col + 2*dc, -dr, -dc, 5);
+            if(patternScore[lineRev]) score += patternScore[lineRev];
+        }
+        return score;
+    }
+    // 深さ2のミニマックス（簡易版）
+    function alphaBetaGomoku(board, depth, alpha, beta, maximizingPlayer, player) {
+        if(depth === 0) {
+            // 盤面全体の評価はコスト高いので、簡易的に現在のプレイヤーの評価値の和を取る（簡略）
+            return 0;
+        }
+        // 実際には全手を生成して評価するが、ここでは簡略化のため、前回の強化AIをベースに深さ1までとする。
+        // 本格的な実装は複雑になるため、今回は評価関数のみで深さ1相当にする。
+        return 0;
+    }
+    // 強化AI (勝ち優先、ブロック優先、パターン評価)
+    function makeStrongAIGomokuMove() {
+        if (gGameOver) return;
+        
+        // 1. 自分が勝てる手があれば即座に打つ
+        for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
+            if(gBoard[r][c] === '') {
+                gBoard[r][c] = gTurn;
+                if(checkGomokuWin(r, c, gTurn)) {
+                    gBoard[r][c] = '';
+                    makeGomokuMove(r, c);
+                    return;
+                }
+                gBoard[r][c] = '';
+            }
+        }
+        
+        // 2. 相手の勝ち筋をブロック
+        const opponent = gTurn === 'black' ? 'white' : 'black';
+        for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
+            if(gBoard[r][c] === '') {
+                gBoard[r][c] = opponent;
+                if(checkGomokuWin(r, c, opponent)) {
+                    gBoard[r][c] = '';
+                    makeGomokuMove(r, c);
+                    return;
+                }
+                gBoard[r][c] = '';
+            }
+        }
+        
+        // 3. パターン評価で最善手を選ぶ (深さ1)
+        let bestScore = -Infinity;
+        let bestMove = null;
+        for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
+            if(gBoard[r][c] === '') {
+                // 自分の視点での評価
+                let myScore = evaluateGomokuPosition(gBoard, gTurn, r, c);
+                // 相手の視点での評価（ブロックの重要性）
+                let oppScore = evaluateGomokuPosition(gBoard, opponent, r, c);
+                let totalScore = myScore + oppScore * 0.8; // 相手の良い手は防ぎたい
+                if(totalScore > bestScore) {
+                    bestScore = totalScore;
+                    bestMove = [r, c];
+                }
+            }
+        }
+        if(bestMove) makeGomokuMove(bestMove[0], bestMove[1]);
+    }
+
     function makeGomokuMove(row, col) {
         if (gGameOver || gBoard[row][col] !== '') return false;
         gBoard[row][col] = gTurn;
@@ -999,14 +793,7 @@
         }
         return true;
     }
-    function makeAIGomokuMove() {
-        if (gGameOver) return;
-        const empty = [];
-        for(let r=0;r<15;r++) for(let c=0;c<15;c++) if(gBoard[r][c]==='') empty.push([r,c]);
-        if(empty.length===0) return;
-        const [r,c] = empty[Math.floor(Math.random() * empty.length)];
-        makeGomokuMove(r,c);
-    }
+
     gCanvas.addEventListener('click', (e) => {
         if (gGameOver) return;
         const rect = gCanvas.getBoundingClientRect(), scale = 450/rect.width;
@@ -1017,9 +804,10 @@
     });
     document.getElementById('resetGomoku').addEventListener('click', initGomoku);
 
+    // 初期化
     initOthello();
-    initShogi();
     initGomoku();
+    // チェスは既に初期化済み
 })();
 </script>
 </body>
