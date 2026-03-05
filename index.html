@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>オセロ・チェス・五目並べ｜AI強度選択版</title>
+    <title>オセロ・チェス・五目並べ｜AI強度5段階（完成版）</title>
     <style>
         * {
             box-sizing: border-box;
@@ -171,7 +171,7 @@
 </head>
 <body>
 <div class="game-container">
-    <h1>3月6日 発表用ゲーム</h1>
+    <h1>オセロ・チェス・五目並べ　発表用</h1>
     <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-bottom: 10px;">
         <div class="menu">
             <button class="game-btn active" data-game="othello">オセロ</button>
@@ -183,8 +183,9 @@
             <select id="difficulty">
                 <option value="off">オフ（2人対戦）</option>
                 <option value="easy">弱</option>
-                <option value="medium" selected>中</option>
+                <option value="medium">中</option>
                 <option value="hard">強</option>
+                <option value="expert" selected>最強（3秒制限）</option>
             </select>
         </div>
     </div>
@@ -215,7 +216,7 @@
             </div>
         </div>
     </div>
-    <div class="footer">AI強度を選んで対戦（強は3手読み/αβ法）</div>
+    <div class="footer">最強レベルは3秒思考／オセロ深度20・チェス深度10・五目深度20</div>
 </div>
 
 <script>
@@ -223,16 +224,8 @@
     // ---------- グローバル設定 ----------
     const difficultySelect = document.getElementById('difficulty');
     
-    // AIが有効か、強度レベルを返す（'off','easy','medium','hard'）
     function getAILevel() {
         return difficultySelect.value;
-    }
-
-    function shouldAIPlay(gamePlayer) {
-        const level = getAILevel();
-        if (level === 'off') return false;
-        // 各ゲームで「後手番」かどうかは呼び出し元で判定
-        return true;
     }
 
     const panels = {
@@ -269,7 +262,6 @@
     const oStatus = document.getElementById('othelloStatus');
     let oBoard = [], oPlayer = 'black', oGameOver = false;
 
-    // 評価関数用のマス重み（隅重視）
     const positionWeight = [
         [ 120, -20,  20,   5,   5,  20, -20, 120],
         [ -20, -40,  -5,  -5,  -5,  -5, -40, -20],
@@ -379,11 +371,9 @@
         }
         return true;
     }
-    // 盤面コピー
     function copyBoard(board) {
         return board.map(row => [...row]);
     }
-    // 一手進めた盤面を返す（評価用）
     function simulateOthelloMove(board, row, col, player) {
         const newBoard = copyBoard(board);
         const opp = player==='black'?'white':'black';
@@ -402,16 +392,21 @@
         newBoard[row][col] = player;
         return newBoard;
     }
-    // 評価関数（自分の色から見たスコア）
     function evaluateOthello(board, player) {
         let score = 0;
         for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
             if(board[r][c] === player) score += positionWeight[r][c];
             else if(board[r][c] !== '') score -= positionWeight[r][c];
         }
+        const myMoves = getValidOthelloMoves(board, player).length;
+        const oppMoves = getValidOthelloMoves(board, player==='black'?'white':'black').length;
+        score += (myMoves - oppMoves) * 5;
+        if(board[0][0] === player) score += 100;
+        if(board[0][7] === player) score += 100;
+        if(board[7][0] === player) score += 100;
+        if(board[7][7] === player) score += 100;
         return score;
     }
-    // αβ法（深さ3）
     function alphaBetaOthello(board, depth, alpha, beta, maximizingPlayer, originalPlayer) {
         if (depth === 0) {
             return evaluateOthello(board, originalPlayer);
@@ -419,7 +414,6 @@
         const player = maximizingPlayer ? originalPlayer : (originalPlayer==='black'?'white':'black');
         const moves = getValidOthelloMoves(board, player);
         if (moves.length === 0) {
-            // パスの場合、相手番で再帰
             return alphaBetaOthello(board, depth-1, alpha, beta, !maximizingPlayer, originalPlayer);
         }
         if (maximizingPlayer) {
@@ -451,14 +445,12 @@
         if(moves.length === 0) return;
         
         if (level === 'easy') {
-            // 弱：ランダム
             const move = moves[Math.floor(Math.random() * moves.length)];
             makeOthelloMove(move[0], move[1]);
             return;
         }
         
         if (level === 'medium') {
-            // 中：1手読み＋評価関数
             let bestScore = -Infinity;
             let bestMove = moves[0];
             for(let move of moves) {
@@ -474,17 +466,47 @@
         }
         
         if (level === 'hard') {
-            // 強：αβ法 深さ3
             let bestScore = -Infinity;
             let bestMove = moves[0];
             for(let move of moves) {
                 const newBoard = simulateOthelloMove(oBoard, move[0], move[1], oPlayer);
-                const score = alphaBetaOthello(newBoard, 2, -Infinity, Infinity, false, oPlayer); // 深さ3＝自分1手＋相手1手＋自分1手
+                const score = alphaBetaOthello(newBoard, 2, -Infinity, Infinity, false, oPlayer);
                 if(score > bestScore) {
                     bestScore = score;
                     bestMove = move;
                 }
             }
+            makeOthelloMove(bestMove[0], bestMove[1]);
+            return;
+        }
+
+        if (level === 'expert') {
+            const startTime = Date.now();
+            const timeLimit = 3000;
+            let bestMove = moves[0];
+            let bestScore = -Infinity;
+            
+            for (let depth = 1; depth <= 20; depth++) {
+                let currentBestMove = null;
+                let currentBestScore = -Infinity;
+                
+                for (let move of moves) {
+                    if (Date.now() - startTime > timeLimit) break;
+                    const newBoard = simulateOthelloMove(oBoard, move[0], move[1], oPlayer);
+                    const score = alphaBetaOthello(newBoard, depth-1, -Infinity, Infinity, false, oPlayer);
+                    if (score > currentBestScore) {
+                        currentBestScore = score;
+                        currentBestMove = move;
+                    }
+                }
+                
+                if (Date.now() - startTime > timeLimit) break;
+                if (currentBestMove) {
+                    bestMove = currentBestMove;
+                    bestScore = currentBestScore;
+                }
+            }
+            
             makeOthelloMove(bestMove[0], bestMove[1]);
             return;
         }
@@ -505,6 +527,68 @@
     let chessGame, chessTable, chessStatus;
     let selectedChess = null;
     const pieceValue = { p:1, n:3, b:3, r:5, q:9, k:1000 };
+    const pieceSquareBonus = {
+        p: [
+            [0,0,0,0,0,0,0,0],
+            [5,5,5,5,5,5,5,5],
+            [1,1,2,3,3,2,1,1],
+            [0,0,0,2,2,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0]
+        ],
+        n: [
+            [-5,-5,-5,-5,-5,-5,-5,-5],
+            [-5,0,0,0,0,0,0,-5],
+            [-5,0,5,5,5,5,0,-5],
+            [-5,0,5,10,10,5,0,-5],
+            [-5,0,5,10,10,5,0,-5],
+            [-5,0,5,5,5,5,0,-5],
+            [-5,0,0,0,0,0,0,-5],
+            [-5,-5,-5,-5,-5,-5,-5,-5]
+        ],
+        b: [
+            [-2,-1,-1,-1,-1,-1,-1,-2],
+            [-1,0,0,0,0,0,0,-1],
+            [-1,0,2,2,2,2,0,-1],
+            [-1,0,2,3,3,2,0,-1],
+            [-1,0,2,3,3,2,0,-1],
+            [-1,0,2,2,2,2,0,-1],
+            [-1,0,0,0,0,0,0,-1],
+            [-2,-1,-1,-1,-1,-1,-1,-2]
+        ],
+        r: [
+            [0,0,0,0,0,0,0,0],
+            [0,1,1,1,1,1,1,0],
+            [0,1,2,2,2,2,1,0],
+            [0,1,2,3,3,2,1,0],
+            [0,1,2,3,3,2,1,0],
+            [0,1,2,2,2,2,1,0],
+            [0,1,1,1,1,1,1,0],
+            [0,0,0,0,0,0,0,0]
+        ],
+        q: [
+            [-2,-1,-1,0,0,-1,-1,-2],
+            [-1,0,0,1,1,0,0,-1],
+            [-1,0,2,2,2,2,0,-1],
+            [0,1,2,3,3,2,1,0],
+            [0,1,2,3,3,2,1,0],
+            [-1,0,2,2,2,2,0,-1],
+            [-1,0,0,1,1,0,0,-1],
+            [-2,-1,-1,0,0,-1,-1,-2]
+        ],
+        k: [
+            [2,3,1,0,0,1,3,2],
+            [2,2,0,0,0,0,2,2],
+            [-1,-2,-2,-2,-2,-2,-2,-1],
+            [-2,-3,-3,-3,-3,-3,-3,-2],
+            [-2,-3,-3,-3,-3,-3,-3,-2],
+            [-1,-2,-2,-2,-2,-2,-2,-1],
+            [2,2,0,0,0,0,2,2],
+            [2,3,1,0,0,1,3,2]
+        ]
+    };
 
     function initChess() {
         chessGame = new Chess();
@@ -573,7 +657,6 @@
             if (move) scheduleAIMoveIfNeeded('chess');
         }
     }
-    // 評価関数（駒の価値合計）
     function evaluateChess(game, color) {
         const board = game.board();
         let score = 0;
@@ -581,13 +664,23 @@
             const piece = board[r][c];
             if(piece) {
                 const value = pieceValue[piece.type];
-                if(piece.color === color) score += value;
-                else score -= value;
+                const bonusTable = pieceSquareBonus[piece.type];
+                let bonus = 0;
+                if (bonusTable) {
+                    if (piece.color === 'w') {
+                        bonus = bonusTable[r][c];
+                    } else {
+                        const rr = 7 - r;
+                        const cc = c;
+                        bonus = bonusTable[rr][cc];
+                    }
+                }
+                if(piece.color === color) score += value + bonus;
+                else score -= (value + bonus);
             }
         }
         return score;
     }
-    // αβ法（チェス用、深さ3）
     function alphaBetaChess(game, depth, alpha, beta, maximizingPlayer, originalColor) {
         if (depth === 0 || game.game_over()) {
             return evaluateChess(game, originalColor);
@@ -669,6 +762,40 @@
             scheduleAIMoveIfNeeded('chess');
             return;
         }
+
+        if (level === 'expert') {
+            const startTime = Date.now();
+            const timeLimit = 3000;
+            let bestMove = moves[0];
+            let bestScore = -Infinity;
+            
+            for (let depth = 1; depth <= 10; depth++) {
+                if (Date.now() - startTime > timeLimit) break;
+                let currentBestMove = null;
+                let currentBestScore = -Infinity;
+                
+                for (let move of moves) {
+                    if (Date.now() - startTime > timeLimit) break;
+                    const gameCopy = new Chess(chessGame.fen());
+                    gameCopy.move({ from: move.from, to: move.to, promotion: 'q' });
+                    const score = alphaBetaChess(gameCopy, depth-1, -Infinity, Infinity, false, currentColor);
+                    if (score > currentBestScore) {
+                        currentBestScore = score;
+                        currentBestMove = move;
+                    }
+                }
+                
+                if (currentBestMove) {
+                    bestMove = currentBestMove;
+                    bestScore = currentBestScore;
+                }
+            }
+            
+            chessGame.move({ from: bestMove.from, to: bestMove.to, promotion: 'q' });
+            renderChess();
+            scheduleAIMoveIfNeeded('chess');
+            return;
+        }
     }
 
     function resetChess() {
@@ -683,7 +810,7 @@
     else window.addEventListener('load', () => { if (window.Chess) initChess(); });
     document.getElementById('resetChess').addEventListener('click', resetChess);
 
-    // ==================== 五目並べ ====================
+    // ==================== 五目並べ（超強化版）====================
     const gCanvas = document.getElementById('gomokuCanvas');
     const gCtx = gCanvas.getContext('2d');
     const gStatus = document.getElementById('gomokuStatus');
@@ -728,43 +855,95 @@
         }
         return false;
     }
-    // 簡易評価（周囲の石の数）
-    function evaluateGomokuPosition(row, col, player) {
+    function evaluateDirection(board, r, c, dr, dc, player) {
+        let count = 1;
+        let openEnds = 0;
+        for(let s=1; s<5; s++) {
+            const nr = r + dr*s, nc = c + dc*s;
+            if(nr<0||nr>=15||nc<0||nc>=15) break;
+            if(board[nr][nc] === player) count++;
+            else if(board[nr][nc] === '') { openEnds++; break; }
+            else break;
+        }
+        for(let s=1; s<5; s++) {
+            const nr = r - dr*s, nc = c - dc*s;
+            if(nr<0||nr>=15||nc<0||nc>=15) break;
+            if(board[nr][nc] === player) count++;
+            else if(board[nr][nc] === '') { openEnds++; break; }
+            else break;
+        }
+        return { count, openEnds };
+    }
+    function evaluateGomokuBoard(board, player) {
         let score = 0;
-        for(let dr=-2; dr<=2; dr++) for(let dc=-2; dc<=2; dc++) {
-            if(dr===0 && dc===0) continue;
-            const r = row+dr, c = col+dc;
-            if(r>=0 && r<15 && c>=0 && c<15 && gBoard[r][c] !== '') {
-                if(gBoard[r][c] === player) score += 10;
-                else score += 5;
+        const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+        for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
+            if(board[r][c] !== player) continue;
+            for(let [dr, dc] of dirs) {
+                const { count, openEnds } = evaluateDirection(board, r, c, dr, dc, player);
+                if(count >= 5) score += 1000000;
+                else if(count === 4) {
+                    if(openEnds >= 1) score += 100000;
+                    else score += 1000;
+                } else if(count === 3) {
+                    if(openEnds >= 2) score += 10000;
+                    else if(openEnds === 1) score += 5000;
+                    else score += 100;
+                } else if(count === 2) {
+                    if(openEnds >= 1) score += 1000;
+                    else score += 10;
+                } else if(count === 1) {
+                    score += 10;
+                }
             }
         }
         return score;
     }
-    // 一手進めた盤面
     function simulateGomokuMove(board, row, col, player) {
         const newBoard = board.map(r => [...r]);
         newBoard[row][col] = player;
         return newBoard;
     }
-    // αβ法（深さ2、五目は分岐が多いので2手読みが限界）
+    function quickEval(board, move, player) {
+        let score = 0;
+        for(let dr=-2; dr<=2; dr++) for(let dc=-2; dc<=2; dc++) {
+            const r = move[0]+dr, c = move[1]+dc;
+            if(r>=0 && r<15 && c>=0 && c<15 && board[r][c] !== '') {
+                if(board[r][c] === player) score += 10;
+                else score += 5;
+            }
+        }
+        return score;
+    }
     function alphaBetaGomoku(board, depth, alpha, beta, maximizingPlayer, originalPlayer) {
         if (depth === 0) {
-            // 簡易評価（自分から見た有利さ）
-            let score = 0;
-            for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
-                if(board[r][c] === originalPlayer) score += 1;
-                else if(board[r][c] !== '') score -= 1;
-            }
-            return score;
+            const myScore = evaluateGomokuBoard(board, originalPlayer);
+            const oppScore = evaluateGomokuBoard(board, originalPlayer==='black'?'white':'black');
+            return myScore - oppScore;
         }
         const player = maximizingPlayer ? originalPlayer : (originalPlayer==='black'?'white':'black');
-        // 空きマスを全て候補とする（非常に多いので周辺のみに絞る簡易版）
-        const moves = [];
+        const candidates = new Set();
         for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
-            if(board[r][c] === '') moves.push([r,c]);
+            if(board[r][c] !== '') {
+                for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) {
+                    const nr = r+dr, nc = c+dc;
+                    if(nr>=0 && nr<15 && nc>=0 && nc<15 && board[nr][nc] === '') {
+                        candidates.add(`${nr},${nc}`);
+                    }
+                }
+            }
+        }
+        let moves = Array.from(candidates).map(s => s.split(',').map(Number));
+        if (moves.length === 0) {
+            for(let r=0; r<15; r++) for(let c=0; c<15; c++) if(board[r][c]==='') moves.push([r,c]);
         }
         if (moves.length === 0) return 0;
+        
+        if (maximizingPlayer) {
+            moves.sort((a,b) => quickEval(board, b, player) - quickEval(board, a, player));
+        } else {
+            moves.sort((a,b) => quickEval(board, b, player) - quickEval(board, a, player));
+        }
         
         if (maximizingPlayer) {
             let maxEval = -Infinity;
@@ -808,7 +987,6 @@
         if (gGameOver) return;
 
         if (level === 'easy') {
-            // 弱：ランダム
             const empty = [];
             for(let r=0; r<15; r++) for(let c=0; c<15; c++) if(gBoard[r][c]==='') empty.push([r,c]);
             if(empty.length===0) return;
@@ -817,7 +995,6 @@
             return;
         }
 
-        // 中・強共通の勝ち筋チェック（優先）
         for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
             if(gBoard[r][c] === '') {
                 gBoard[r][c] = gTurn;
@@ -843,12 +1020,18 @@
         }
 
         if (level === 'medium') {
-            // 中：評価関数
             let bestScore = -Infinity;
             let bestMove = null;
             for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
                 if(gBoard[r][c] === '') {
-                    const score = evaluateGomokuPosition(r, c, gTurn);
+                    let score = 0;
+                    for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) {
+                        const nr = r+dr, nc = c+dc;
+                        if(nr>=0 && nr<15 && nc>=0 && nc<15 && gBoard[nr][nc]!=='') {
+                            if(gBoard[nr][nc] === gTurn) score += 10;
+                            else score += 5;
+                        }
+                    }
                     if(score > bestScore) {
                         bestScore = score;
                         bestMove = [r, c];
@@ -860,8 +1043,6 @@
         }
 
         if (level === 'hard') {
-            // 強：αβ法 深さ2（空きマスが多いので周辺のみ評価）
-            // 実際には全空きマスは多すぎるので、周辺マスに限定
             const candidates = new Set();
             for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
                 if(gBoard[r][c] !== '') {
@@ -873,23 +1054,69 @@
                     }
                 }
             }
-            const moves = Array.from(candidates).map(s => s.split(',').map(Number));
+            let moves = Array.from(candidates).map(s => s.split(',').map(Number));
             if (moves.length === 0) {
-                // 候補がない場合（初手など）は全マスから
-                for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
-                    if(gBoard[r][c] === '') moves.push([r,c]);
-                }
+                for(let r=0; r<15; r++) for(let c=0; c<15; c++) if(gBoard[r][c]==='') moves.push([r,c]);
             }
+            moves.sort((a,b) => quickEval(gBoard, b, gTurn) - quickEval(gBoard, a, gTurn));
             let bestScore = -Infinity;
             let bestMove = moves[0];
             for(let [r,c] of moves) {
                 const newBoard = simulateGomokuMove(gBoard, r, c, gTurn);
-                const score = alphaBetaGomoku(newBoard, 1, -Infinity, Infinity, false, gTurn); // 深さ2
+                const score = alphaBetaGomoku(newBoard, 1, -Infinity, Infinity, false, gTurn);
                 if(score > bestScore) {
                     bestScore = score;
                     bestMove = [r, c];
                 }
             }
+            makeGomokuMove(bestMove[0], bestMove[1]);
+            return;
+        }
+
+        if (level === 'expert') {
+            const startTime = Date.now();
+            const timeLimit = 3000;
+            const candidates = new Set();
+            for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
+                if(gBoard[r][c] !== '') {
+                    for(let dr=-1; dr<=1; dr++) for(let dc=-1; dc<=1; dc++) {
+                        const nr = r+dr, nc = c+dc;
+                        if(nr>=0 && nr<15 && nc>=0 && nc<15 && gBoard[nr][nc] === '') {
+                            candidates.add(`${nr},${nc}`);
+                        }
+                    }
+                }
+            }
+            let moves = Array.from(candidates).map(s => s.split(',').map(Number));
+            if (moves.length === 0) {
+                for(let r=0; r<15; r++) for(let c=0; c<15; c++) if(gBoard[r][c]==='') moves.push([r,c]);
+            }
+            moves.sort((a,b) => quickEval(gBoard, b, gTurn) - quickEval(gBoard, a, gTurn));
+            
+            let bestMove = moves[0];
+            let bestScore = -Infinity;
+            
+            for (let depth = 1; depth <= 20; depth++) {
+                if (Date.now() - startTime > timeLimit) break;
+                let currentBestMove = null;
+                let currentBestScore = -Infinity;
+                
+                for (let [r,c] of moves) {
+                    if (Date.now() - startTime > timeLimit) break;
+                    const newBoard = simulateGomokuMove(gBoard, r, c, gTurn);
+                    const score = alphaBetaGomoku(newBoard, depth-1, -Infinity, Infinity, false, gTurn);
+                    if (score > currentBestScore) {
+                        currentBestScore = score;
+                        currentBestMove = [r, c];
+                    }
+                }
+                
+                if (currentBestMove) {
+                    bestMove = currentBestMove;
+                    bestScore = currentBestScore;
+                }
+            }
+            
             makeGomokuMove(bestMove[0], bestMove[1]);
             return;
         }
