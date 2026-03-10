@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>オセロ最強（超強化版）・チェス・五目並べ｜完成版</title>
+    <title>オセロ（0.5秒思考）・チェス・五目並べ｜完全版</title>
     <style>
-        /* スタイルは前回と同じ（省略） */
         * {
             box-sizing: border-box;
             font-family: 'Segoe UI', Meiryo, sans-serif;
@@ -172,7 +171,7 @@
 </head>
 <body>
 <div class="game-container">
-    <h1>オセロ（超強化）・チェス・五目並べ</h1>
+    <h1>オセロ（0.5秒思考）・チェス・五目並べ｜完全版</h1>
     <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-bottom: 10px;">
         <div class="menu">
             <button class="game-btn active" data-game="othello">オセロ</button>
@@ -186,7 +185,7 @@
                 <option value="easy">弱</option>
                 <option value="medium">中</option>
                 <option value="hard">強</option>
-                <option value="expert" selected>最強（3秒制限）</option>
+                <option value="expert" selected>最強（0.5秒制限）</option>
             </select>
         </div>
     </div>
@@ -217,7 +216,7 @@
             </div>
         </div>
     </div>
-    <div class="footer">オセロ最強は終盤完全読み＋詳細評価／五目も深度20</div>
+    <div class="footer">全ゲーム最強AIは0.5秒思考・終盤完全読み</div>
 </div>
 
 <script>
@@ -257,13 +256,12 @@
         }, 200);
     }
 
-    // ==================== オセロ（超強化版）====================
+    // ==================== オセロ（0.5秒思考・戻る機能なし）====================
     const oCanvas = document.getElementById('othelloCanvas');
     const oCtx = oCanvas.getContext('2d');
     const oStatus = document.getElementById('othelloStatus');
     let oBoard = [], oPlayer = 'black', oGameOver = false;
 
-    // より詳細な評価値（Egaroucid風、隅・辺・Xマス・Cマスを重視）
     const positionWeight = [
         [ 300, -50,  30,  10,  10,  30, -50, 300],
         [ -50, -80, -10, -10, -10, -10, -80, -50],
@@ -274,8 +272,6 @@
         [ -50, -80, -10, -10, -10, -10, -80, -50],
         [ 300, -50,  30,  10,  10,  30, -50, 300]
     ];
-
-    // 終盤完全読みの閾値（空きマス数）
     const ENDGAME_THRESHOLD = 8;
 
     function initOthello() {
@@ -295,6 +291,7 @@
         oStatus.textContent = '黒の番';
         scheduleAIMoveIfNeeded('othello');
     }
+
     function drawOthello() {
         const s = 450/8;
         oCtx.fillStyle = '#2b7a4b';
@@ -353,6 +350,7 @@
             }
         }
         if(!flipped) return false;
+
         oBoard[row][col] = oPlayer;
         oPlayer = opp;
         drawOthello();
@@ -397,43 +395,32 @@
         newBoard[row][col] = player;
         return newBoard;
     }
-    // 改良版評価関数（位置重み＋モビリティ＋確定石＋辺の安定性）
     function evaluateOthello(board, player) {
         let score = 0;
-        // 位置重み
         for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
             if(board[r][c] === player) score += positionWeight[r][c];
             else if(board[r][c] !== '') score -= positionWeight[r][c];
         }
-        // モビリティ
         const myMoves = getValidOthelloMoves(board, player).length;
         const oppMoves = getValidOthelloMoves(board, player==='black'?'white':'black').length;
-        score += (myMoves - oppMoves) * 10; // より重視
-        
-        // 確定石（四隅と辺の一部）
+        score += (myMoves - oppMoves) * 10;
         if(board[0][0] === player) score += 500;
         if(board[0][7] === player) score += 500;
         if(board[7][0] === player) score += 500;
         if(board[7][7] === player) score += 500;
-        
-        // 辺の確定石（簡易版）
         for(let i=1; i<7; i++) {
             if(board[0][i] === player && (board[0][i-1] === player || board[0][i+1] === player)) score += 20;
             if(board[7][i] === player && (board[7][i-1] === player || board[7][i+1] === player)) score += 20;
             if(board[i][0] === player && (board[i-1][0] === player || board[i+1][0] === player)) score += 20;
             if(board[i][7] === player && (board[i-1][7] === player || board[i+1][7] === player)) score += 20;
         }
-        
         return score;
     }
-    // 終盤完全読み（ミニマックス、空きマスが閾値以下）
     function perfectEndgame(board, player, originalPlayer) {
         const moves = getValidOthelloMoves(board, player);
         if (moves.length === 0) {
-            // パスの場合
             const opp = player==='black'?'white':'black';
             if (getValidOthelloMoves(board, opp).length === 0) {
-                // ゲーム終了、石の数を返す
                 let myCount = 0, oppCount = 0;
                 for(let r=0; r<8; r++) for(let c=0; c<8; c++) {
                     if(board[r][c] === originalPlayer) myCount++;
@@ -441,7 +428,6 @@
                 }
                 return myCount - oppCount;
             } else {
-                // パスして相手番
                 return -perfectEndgame(board, opp, originalPlayer);
             }
         }
@@ -528,9 +514,8 @@
 
         if (level === 'expert') {
             const startTime = Date.now();
-            const timeLimit = 3000;
+            const timeLimit = 500; // 0.5秒
             
-            // 終盤完全読みチェック
             const emptyCount = oBoard.flat().filter(cell => cell === '').length;
             if (emptyCount <= ENDGAME_THRESHOLD) {
                 let bestScore = -Infinity;
@@ -547,7 +532,6 @@
                 return;
             }
             
-            // 通常の反復深化
             let bestMove = moves[0];
             let bestScore = -Infinity;
             
@@ -588,7 +572,7 @@
     });
     document.getElementById('resetOthello').addEventListener('click', initOthello);
 
-    // ==================== チェス（従来の最強）====================
+    // ==================== チェス（0.5秒思考）====================
     let chessGame, chessTable, chessStatus;
     let selectedChess = null;
     const pieceValue = { p:1, n:3, b:3, r:5, q:9, k:1000 };
@@ -830,7 +814,7 @@
 
         if (level === 'expert') {
             const startTime = Date.now();
-            const timeLimit = 3000;
+            const timeLimit = 500; // 0.5秒
             let bestMove = moves[0];
             let bestScore = -Infinity;
             
@@ -875,7 +859,7 @@
     else window.addEventListener('load', () => { if (window.Chess) initChess(); });
     document.getElementById('resetChess').addEventListener('click', resetChess);
 
-    // ==================== 五目並べ（従来の最強）====================
+    // ==================== 五目並べ（0.5秒思考）====================
     const gCanvas = document.getElementById('gomokuCanvas');
     const gCtx = gCanvas.getContext('2d');
     const gStatus = document.getElementById('gomokuStatus');
@@ -1140,7 +1124,7 @@
 
         if (level === 'expert') {
             const startTime = Date.now();
-            const timeLimit = 3000;
+            const timeLimit = 500; // 0.5秒
             const candidates = new Set();
             for(let r=0; r<15; r++) for(let c=0; c<15; c++) {
                 if(gBoard[r][c] !== '') {
